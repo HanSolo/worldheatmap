@@ -19,6 +19,7 @@ package eu.hansolo.fx.world;
 import eu.hansolo.fx.heatmap.ColorMapping;
 import eu.hansolo.fx.heatmap.HeatMap;
 import eu.hansolo.fx.heatmap.HeatMapBuilder;
+import eu.hansolo.fx.heatmap.HeatMapEvent;
 import eu.hansolo.fx.heatmap.OpacityDistribution;
 import javafx.application.Platform;
 import javafx.beans.DefaultProperty;
@@ -43,11 +44,14 @@ import javafx.event.WeakEventHandler;
 import javafx.geometry.Bounds;
 import javafx.geometry.Insets;
 import javafx.geometry.Orientation;
+import javafx.geometry.Point2D;
 import javafx.geometry.VPos;
 import javafx.scene.CacheHint;
 import javafx.scene.Group;
 import javafx.scene.Node;
 import javafx.scene.control.Tooltip;
+import javafx.scene.image.Image;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.input.ScrollEvent;
 import javafx.scene.layout.Background;
@@ -129,6 +133,11 @@ public class World extends Region {
     protected            HeatMap                         heatMap;
     protected            Map<String, List<CountryPath>>  countryPaths;
     protected            ObservableMap<Location, Shape>  locations;
+    protected            ColorMapping                    colorMapping;
+    protected            double                          eventRadius;
+    protected            boolean                         fadeColors;
+    protected            OpacityDistribution             opacityDistribution;
+    protected            double                          heatMapOpacity;
     // internal event handlers
     protected            EventHandler<MouseEvent>        _mouseEnterHandler;
     protected            EventHandler<MouseEvent>        _mousePressHandler;
@@ -144,9 +153,12 @@ public class World extends Region {
 
     // ******************** Constructors **************************************
     public World() {
-        this(Resolution.HI_RES);
+        this(Resolution.HI_RES, ColorMapping.INFRARED_3, 5, false, OpacityDistribution.EXPONENTIAL, 0.75);
     }
     public World(final Resolution RESOLUTION) {
+        this(RESOLUTION, ColorMapping.INFRARED_3, 5, false, OpacityDistribution.EXPONENTIAL, 0.75);
+    }
+    public World(final Resolution RESOLUTION, final ColorMapping COLOR_MAPPING, final double EVENT_RADIUS, final boolean FADE_COLORS, final OpacityDistribution OPACITY_DISTRIBUTION, final double HEAT_MAP_OPACITY) {
         resolutionProperties = readProperties(Resolution.HI_RES == RESOLUTION ? World.HIRES_PROPERTIES : World.LORES_PROPERTIES);
         backgroundColor      = new StyleableObjectProperty<Color>(BACKGROUND_COLOR.getInitialValue(World.this)) {
             @Override protected void invalidated() { setBackground(new Background(new BackgroundFill(get(), CornerRadii.EMPTY, Insets.EMPTY))); }
@@ -231,6 +243,11 @@ public class World extends Region {
         };
         countryPaths         = createCountryPaths();
         locations            = FXCollections.observableHashMap();
+        colorMapping         = COLOR_MAPPING;
+        eventRadius          = EVENT_RADIUS;
+        fadeColors           = FADE_COLORS;
+        opacityDistribution  = OPACITY_DISTRIBUTION;
+        heatMapOpacity       = HEAT_MAP_OPACITY;
 
         locationIconCode     = MaterialDesign.MDI_CHECKBOX_BLANK_CIRCLE;
         pane                 = new Pane();
@@ -300,11 +317,11 @@ public class World extends Region {
 
         heatMap  = HeatMapBuilder.create()
                                  .prefSize(1009, 665)
-                                 .colorMapping(ColorMapping.INFRARED_3)
-                                 .eventRadius(5)
-                                 .fadeColors(false)
-                                 .opacityDistribution(OpacityDistribution.EXPONENTIAL)
-                                 .heatMapOpacity(0.75)
+                                 .colorMapping(colorMapping)
+                                 .eventRadius(eventRadius)
+                                 .fadeColors(fadeColors)
+                                 .opacityDistribution(opacityDistribution)
+                                 .heatMapOpacity(heatMapOpacity)
                                  .build();
 
         getChildren().setAll(group, heatMap);
@@ -467,6 +484,122 @@ public class World extends Region {
     }
 
     public HeatMap getHeatMap() { return heatMap; }
+
+    public void addEvents(final Point2D... EVENTS) { heatMap.addEvents(EVENTS); }
+
+    /**
+     * Add a list of events and update the heatmap after all events
+     * have been added
+     * @param EVENTS
+     */
+    public void addEvents(final List<Point2D> EVENTS) { heatMap.addEvents(EVENTS); }
+
+    /**
+     * Visualizes an event with the given radius and opacity gradient
+     * @param X
+     * @param Y
+     * @param OFFSET_X
+     * @param OFFSET_Y
+     * @param RADIUS
+     * @param OPACITY_GRADIENT
+     */
+    public void addEvent(final double X, final double Y, final double OFFSET_X, final double OFFSET_Y, final double RADIUS, final OpacityDistribution OPACITY_GRADIENT) { heatMap.addEvent(X, Y, OFFSET_X, OFFSET_Y, RADIUS, OPACITY_GRADIENT); }
+
+    /**
+     * Visualizes an event with a given image at the given position and with
+     * the given offset. So one could use different weighted images for different
+     * kinds of events (e.g. important events more opaque as unimportant events)
+     * @param X
+     * @param Y
+     * @param EVENT_IMAGE
+     * @param OFFSET_X
+     * @param OFFSET_Y
+     */
+    public void addEvent(final double X, final double Y, final Image EVENT_IMAGE, final double OFFSET_X, final double OFFSET_Y) { heatMap.addEvent(X, Y, EVENT_IMAGE, OFFSET_X, OFFSET_Y); }
+
+    /**
+     * If you don't need to weight events you could use this method which
+     * will create events that always use the global weight
+     * @param X
+     * @param Y
+     */
+    public void addEvent(final double X, final double Y) { heatMap.addEvent(X, Y); }
+
+    /**
+     * Calling this method will lead to a clean new heat map without any data
+     */
+    public void clearHeatMap() { heatMap.clearHeatMap(); }
+
+    /**
+     * Returns the used color mapping with the gradient that is used
+     * to visualize the data
+     * @return
+     */
+    public ColorMapping getColorMapping() { return heatMap.getColorMapping(); }
+
+    /**
+     * The ColorMapping enum contains some examples for color mappings
+     * that might be useful to visualize data and here you could set
+     * the one you like most. Setting another color mapping will recreate
+     * the heat map automatically.
+     * @param COLOR_MAPPING
+     */
+    public void setColorMapping(final ColorMapping COLOR_MAPPING) { heatMap.setColorMapping(COLOR_MAPPING); }
+
+    /**
+     * Returns true if the heat map is used to visualize frequencies (default)
+     * @return true if the heat map is used to visualize frequencies
+     */
+    public boolean isFadeColors() { return heatMap.isFadeColors(); }
+
+    /**
+     * If true each event will be visualized by a radial gradient
+     * with the colors from the given color mapping and decreasing
+     * opacity from the inside to the outside. If you set it to false
+     * the color opacity won't fade out but will be opaque. This might
+     * be handy if you would like to visualize the density instead of
+     * the frequency
+     * @param FADE_COLORS
+     */
+    public void setFadeColors(final boolean FADE_COLORS) { heatMap.setFadeColors(FADE_COLORS); }
+
+    /**
+     * Returns the radius of the circle that is used to visualize an
+     * event.
+     * @return the radius of the circle that is used to visualize an event
+     */
+    public double getEventRadius() { return heatMap.getEventRadius(); }
+
+    /**
+     * Each event will be visualized by a circle filled with a radial
+     * gradient with decreasing opacity from the inside to the outside.
+     * If you have lot's of events it makes sense to set the event radius
+     * to a smaller value. The default value is 15.5
+     * @param RADIUS
+     */
+    public void setEventRadius(final double RADIUS) { heatMap.setEventRadius(RADIUS); }
+
+    public double getHeatMapOpacity() { return heatMap.getOpacity(); }
+
+    public void setHeatMapOpacity(final double OPACITY) { heatMap.setOpacity(clamp(0.0, 1.0, OPACITY)); }
+
+    /**
+     * Returns the opacity distribution that will be used to visualize
+     * the events in the monochrome map. If you have lot's of events
+     * it makes sense to reduce the radius and the set the opacity
+     * distribution to exponential.
+     * @return the opacity distribution of events in the monochrome map
+     */
+    public OpacityDistribution getOpacityDistribution() { return heatMap.getOpacityDistribution(); }
+
+    /**
+     * Changing the opacity distribution will affect the smoothing of
+     * the heat map. If you choose a linear opacity distribution you will
+     * see bigger colored dots for each event than using the exponential
+     * opacity distribution (at the same event radius).
+     * @param OPACITY_DISTRIBUTION
+     */
+    public void setOpacityDistribution(final OpacityDistribution OPACITY_DISTRIBUTION) { heatMap.setOpacityDistribution(OPACITY_DISTRIBUTION); }
 
     public static double[] latLonToXY(final double LATITUDE, final double LONGITUDE) {
         double x = (LONGITUDE + 180) * (PREFERRED_WIDTH / 360) + MAP_OFFSET_X;

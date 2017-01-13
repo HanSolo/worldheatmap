@@ -67,8 +67,8 @@ public class HeatMapBuilder<B extends HeatMapBuilder<B>> {
         return (B) this;
     }
 
-    public final B eventRadius(final double EVENT_rADIUS) {
-        properties.put("eventRadius", new SimpleDoubleProperty(EVENT_rADIUS));
+    public final B eventRadius(final double EVENT_RADIUS) {
+        properties.put("eventRadius", new SimpleDoubleProperty(EVENT_RADIUS));
         return (B) this;
     }
 

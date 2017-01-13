@@ -16,6 +16,8 @@
 
 package eu.hansolo.fx.world;
 
+import eu.hansolo.fx.heatmap.ColorMapping;
+import eu.hansolo.fx.heatmap.OpacityDistribution;
 import eu.hansolo.fx.world.World.Resolution;
 import javafx.beans.property.BooleanProperty;
 import javafx.beans.property.DoubleProperty;
@@ -139,6 +141,31 @@ public class WorldBuilder<B extends WorldBuilder<B>> {
         return (B)this;
     }
 
+    public final B colorMapping(final ColorMapping COLOR_MAPPING) {
+        properties.put("colorMapping", new SimpleObjectProperty<>(COLOR_MAPPING));
+        return (B) this;
+    }
+
+    public final B eventRadius(final double EVENT_RADIUS) {
+        properties.put("eventRadius", new SimpleDoubleProperty(EVENT_RADIUS));
+        return (B) this;
+    }
+
+    public final B fadeColors(final boolean FADE_COLORS) {
+        properties.put("fadeColors", new SimpleBooleanProperty(FADE_COLORS));
+        return (B)this;
+    }
+
+    public final B heatMapOpacity(final double HEAT_MAP_OPACITY) {
+        properties.put("heatMapOpacity", new SimpleDoubleProperty(HEAT_MAP_OPACITY));
+        return (B) this;
+    }
+
+    public final B opacityDistribution(final OpacityDistribution OPACITY_DISTRIBUTION) {
+        properties.put("opacityDistribution", new SimpleObjectProperty<>(OPACITY_DISTRIBUTION));
+        return (B) this;
+    }
+
     public final B prefSize(final double WIDTH, final double HEIGHT) {
         properties.put("prefSize", new SimpleObjectProperty<>(new Dimension2D(WIDTH, HEIGHT)));
         return (B)this;
@@ -212,7 +239,13 @@ public class WorldBuilder<B extends WorldBuilder<B>> {
     }
 
     public final World build() {
-        final World CONTROL = new World(resolution);
+        ColorMapping        colorMapping        = properties.containsKey("colorMapping") ? ((ObjectProperty<ColorMapping>) properties.get("colorMapping")).get() : ColorMapping.INFRARED_3;
+        double              eventRadius         = properties.containsKey("eventRadius") ? ((DoubleProperty) properties.get("eventRadius")).get() : 5;
+        boolean             fadeColors          = properties.containsKey("fadeColors") ? ((BooleanProperty) properties.get("fadeColors")).get() : false;
+        double              heatMapOpacity      = properties.containsKey("heatMapOpacity") ? ((DoubleProperty) properties.get("heatMapOpacity")).get() : 0.5;
+        OpacityDistribution opacityDistribution = properties.containsKey("opacityDistribution") ? ((ObjectProperty<OpacityDistribution>) properties.get("opacityDistribution")).get() : OpacityDistribution.EXPONENTIAL;
+
+        final World CONTROL = new World(resolution, colorMapping, eventRadius, fadeColors, opacityDistribution, heatMapOpacity);
 
         for (String key : properties.keySet()) {
             if ("prefSize".equals(key)) {

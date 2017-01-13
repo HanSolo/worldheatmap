@@ -1,5 +1,7 @@
 package eu.hansolo.fx.worldheatmap;
 
+import eu.hansolo.fx.heatmap.ColorMapping;
+import eu.hansolo.fx.heatmap.OpacityDistribution;
 import eu.hansolo.fx.world.World;
 import eu.hansolo.fx.world.World.Resolution;
 import eu.hansolo.fx.world.WorldBuilder;
@@ -31,11 +33,16 @@ public class Main extends Application {
         try { cities = readCitiesFromFile(); } catch (IOException e) { cities = new ArrayList<>(); }
 
         worldMap = WorldBuilder.create()
-                                .resolution(Resolution.HI_RES)
-                                .zoomEnabled(false)
-                                .hoverEnabled(false)
-                                .selectionEnabled(false)
-                                .build();
+                               .resolution(Resolution.HI_RES)
+                               .zoomEnabled(false)
+                               .hoverEnabled(false)
+                               .selectionEnabled(false)
+                               .colorMapping(ColorMapping.BLUE_YELLOW_RED)
+                               .fadeColors(true)
+                               .eventRadius(3)
+                               .heatMapOpacity(0.75)
+                               .opacityDistribution(OpacityDistribution.LINEAR)
+                               .build();
 
         pane = new StackPane(worldMap);
 
