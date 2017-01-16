@@ -127,17 +127,18 @@ public class World extends Region {
     private              double                          zoomSceneY;
     private              double                          width;
     private              double                          height;
-    protected            Ikon                            locationIconCode;
-    protected            Pane                            pane;
-    protected            Group                           group;
-    protected            HeatMap                         heatMap;
-    protected            Map<String, List<CountryPath>>  countryPaths;
-    protected            ObservableMap<Location, Shape>  locations;
-    protected            ColorMapping                    colorMapping;
-    protected            double                          eventRadius;
-    protected            boolean                         fadeColors;
-    protected            OpacityDistribution             opacityDistribution;
-    protected            double                          heatMapOpacity;
+    private              Ikon                            locationIconCode;
+    private              Pane                            pane;
+    private              Group                           group;
+    private              HeatMap                         heatMap;
+    private              Map<String, List<CountryPath>>  countryPaths;
+    private              ObservableMap<Location, Shape>  locations;
+    private              ColorMapping                    colorMapping;
+    private              double                          eventRadius;
+    private              boolean                         fadeColors;
+    private              OpacityDistribution             opacityDistribution;
+    private              double                          heatMapOpacity;
+    private              BooleanProperty                 heatMapVisible;
     // internal event handlers
     protected            EventHandler<MouseEvent>        _mouseEnterHandler;
     protected            EventHandler<MouseEvent>        _mousePressHandler;
@@ -248,6 +249,14 @@ public class World extends Region {
         fadeColors           = FADE_COLORS;
         opacityDistribution  = OPACITY_DISTRIBUTION;
         heatMapOpacity       = HEAT_MAP_OPACITY;
+        heatMapVisible       = new BooleanPropertyBase(true) {
+            @Override protected void invalidated() {
+                heatMap.setVisible(get());
+                heatMap.setManaged(get());
+            }
+            @Override public Object getBean() { return World.this; }
+            @Override public String getName() { return "heatMapVisible"; }
+        };
 
         locationIconCode     = MaterialDesign.MDI_CHECKBOX_BLANK_CIRCLE;
         pane                 = new Pane();
@@ -411,6 +420,10 @@ public class World extends Region {
     public double getScaleFactor() { return scaleFactor.get(); }
     public void setScaleFactor(final double FACTOR) { scaleFactor.set(FACTOR); }
     public DoubleProperty scaleFactorProperty() { return scaleFactor; }
+
+    public boolean isHeatMapVisible() { return heatMapVisible.get(); }
+    public void setHeatMapVisible(final boolean VISIBLE) { heatMapVisible.set(VISIBLE); }
+    public BooleanProperty heatMapVisibleProperty() { return heatMapVisible; }
 
     public void resetZoom() {
         setScaleFactor(1.0);
